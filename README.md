@@ -1,153 +1,119 @@
-# FileBazaar
+# Songshop
+**Draft 0.0.1 - by Jonathan S Layton**
 
-[![npm release](https://img.shields.io/npm/v/filebazaar.svg)](https://www.npmjs.com/package/filebazaar)
-[![MIT license](https://img.shields.io/github/license/elementsproject/filebazaar.svg)](https://github.com/elementsproject/filebazaar/blob/master/LICENSE)
-[![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-[![IRC](https://img.shields.io/badge/chat-on%20freenode-brightgreen.svg)](https://webchat.freenode.net/?channels=lightning-charge)
+**PGP:** 5BFF 3935 B019 A7A2 725A 054B 2AA6 11CC 09B3 EDA6
 
-Sell digital files with Bitcoin & Lightning.
+**BTC only, for now.**
 
-- Simple setup and minimal configuration, just put some files in a directory and start the server.
+#### This should be a simple, 1-click-deployable self-hostable web-service, for Musicians to sell their work.
 
-- Lightweight web browsing interface, works without JavaScript.
+#### The paradigm ahead is 'lossless, original sound'. This is bit-by-bit. There is no room for fuzzy matching here.
 
-- Generates previews for images, videos, audio, pdf and text documents.
+## Incorporates -
 
-Powered by :zap: [Lightning Charge](https://github.com/ElementsProject/lightning-charge).
+### FileBazaar
+- https://github.com/ElementsProject/filebazaar
 
-![FileBazaar demo](https://i.imgur.com/UhQD0Tg.gif)
+### Lightning Network
+- https://github.com/ElementsProject/lightning-charge
+- https://github.com/ElementsProject/lightning
 
-## Quickstart
+### Bitcoin
+- https://github.com/bitcoin/bitcoin
 
-Setup [Lightning Charge](https://github.com/ElementsProject/lightning-charge), then:
+### Direct commitments to the BTC chain
+- https://github.com/bitpay/i-made-this
 
-```bash
-# Install dependencies for EXIF extraction and preview generation
-$ apt install exiftool ffmpeg graphicsmagick unoconv
+### Direct commitments to the BTC chain (w/Memo Protocol)
+- https://memo.cash/protocol
 
-# Install dependencies for node-canvas (see https://github.com/Automattic/node-canvas#installation)
-$ apt install libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
+### Stampery & OpenTimestamps proofs via the BTC chain
+- https://api.stampery.com
+- https://github.com/opentimestamps by Peter Todd
 
-# Install filebazaar
-$ npm install -g filebazaar
+### JSON Web Token
+- https://github.com/auth0/express-jwt
 
-# Prepare a directory with the files you wish to sell and cd to it
-$ mkdir ~/ForSale && cd ~/ForSale
+### Master Music DB - discogs.com
+- https://discogs.com
 
-# Initialize the `_filebazaar.yaml` config file
-$ filebazaar init
-
-# Edit the config file (`charge_token` is required, `token_secret` is auto-generated)
-$ edit _filebazaar.yaml
-
-# Start filebazaar!
-$ filebazaar
-```
-
-## Configuration
-
-FileBazaar's configuration options can be managed using the `_filebazaar.yaml` file or via environment variables.
-All config options are optional and have sane defaults except for `charge_token` and `token_secret`, which are required.
-See [`lib/config.js`](https://github.com/elementsproject/filebazaar/blob/master/src/lib/config.js) for more details.
-
-Below is an example `_filebazaar.yaml` file:
-
-```yaml
 ---
 
-### Server settings
+**The artist** should be / must be the domain webmaster, and signal this publicly. This allows for a thin-waisted trust model, where an https-enabled domain and a Bitcoin address are the only boundaries.
 
-port: 9678
-host: 127.0.0.1
-env: production
-url: http://my-public-url.com/
+---
 
-### Lightning Charge
+## Artist Upload -
 
-charge_url: http://localhost:9112
-charge_token: API_TOKEN_CONFIGURED_IN_CHARGE
+**We begin by uploading a FLAC file -**
 
-### FileBazaar settings
+The **songhash** is the PCM audio binary, without its MD5 checksum appended, sha256-hashed (`SHA256(pcm)`).
 
-# The directory containing the files for sale
-# defaults to the directory containing the _filebazaar.yaml file
-directory: /home/shesek/ForSale
+A **tagged** song file version is also created; this version will be distributed. It is a native FLAC with `ARTIST` / `COMPOSER` and `TITLE` set in the Vorbis Tags, based on the musician's input. Note that the exact same PCM audio data exists within this file.
 
-# The default file price, can be overridden for individual files (see below)
-default_price: 0.25 USD
 
-# Expiry times
-invoice_ttl: 3600 # lock-in exchange rate for 1 hour
-download_ttl: 172800 # make download available for 2 days after payment
+A file is a **unique song** if -
 
-# Secret for generating HMAC access tokens (required)
-token_secret: SOME_LONG_RANDOM_STRING
+1. If the file is a valid FLAC (`flac -t`), and
+2. If there are no `OP_RETURN`s on the BTC chain with this songhash, and
+3. If there are no [Stampery](https://stampery.com) or [OpenTimestamps](https://timestamps.org) public attestation servers with proofs of this songhash, and
+4. If there are no matching `(Song Name, Artist Name)` entries in the **Master Music DB** ([discogs.com](https://discogs.com)), based on the file's Vorbis Tags.
 
-# Directory to keep cached preview files
-# defaults to `{directory}/_filebazaar_cache`
-cache_path: /path/to/filebazaar_cache
+Then we'll deem it 'unique enough' to create an original song commitment to the BTC blockchain -
+1. Validate + upload song file to artist's webserver / domain, then
+2. Commit the songhash to BTC chain directly (via a tx from your own address) (optionally as a [memo protocol post](https://memo.protocol/protocol)), and await nth confirmation, **or**
+- Commit the songhash via Stampery and/or OpenTimestamps (free!), save + upload proof to artist's webserver/domain, and await confirmations + attestations, then
+- Once complete, song is 'ready for distribution'; you may begin sharing it at any price.
 
-### Looks & feel
+## Buyer Download -
 
-# See available themes on https://bootswatch.com
-theme: yeti
+**Users can now 'buy original songs', with a fast BTC micropayment, straight from the musician's known domain.**
 
-# Add custom CSS
-css: |
-  body { background: blue }
-  a { color: orange }
+Possible channels for Song Delivery -
+- HTTPS URL over [ElementsProject/FileBazaar](https://github.com/ElementsProject/FileBazaar)
+- HTTPS URL over [ElementsProject/paypercall](https://github.com/ElementsProject/paypercall#paying-for-api-calls)
+- HTTPS URL over [ElementsProject/ifpaytt](https://github.com/ElementsProject/ifpaytt)
+- HTTPS URL over Email
+- Other over Email
 
-# Set custom views directory
-views_dir: /path/to/custom/views
+URLs are useful because they are portable and can allow downloads to easily be retried in case of failure. However, they can be dangerous to a digital goods seller, since they are easily shared.
 
-# Set custom static files directory
-static_dir: /path/to/custom/static
+**By default**, the generated URLs for purchased songs are **'Ephemeral'**, meaning they expire in 30 minutes. They can alternatively be set to 'Persistent', if the artist so chooses.
 
-### Files settings
+### Notes -
 
-files:
-  Books/Mastering-Bitcoin.pdf:
-    price: 5 USD
-    button: Buy this book
-    desc: >      
-      Mastering Bitcoin is essential reading for everyone interested in learning about bitcoin.
-      
-      This field **supports markdown** and will show up on the file's page.
+- This platform does Proof-of-Existence and Timestamping for Song Files, using sha256 and [Bitcoin](https://github.com/bitcoin/bitcoin).
 
-  # if you're only interested in setting the price, you can use:
-  Books/Mastering-Bitcoin.pdf: 5 USD
+- This platform is **ONLY for NEW, UNRELEASED creations**. Make sure you, the musician, were the one to master the final version of the song file (so you are the **only** person who could upload the original)!
 
-  # if you want to configure multiple files inside the same directory, you can nest them:
-  Media/: # (note the trailing slash)
-    Books/Andreas/:
-      Mastering-Bitcoin.pdf: 5 USD # /Media/Books/Andreas/Mastering-Bitcoin.pdf
-      The-Internet-of-Money.pdf: 4 USD # /Media/Books/Andreas/The-Internet-of-Money.pdf
-```
+- This protocol / platform, indeed, adheres to a first-come first-serve model. An artist proves ownership of their new creation by committing the sha256 of its PCM Audio in an transaction using `OP_RETURN`, to the Bitcoin blockchain, first.
 
-## CLI
+- If a prior work is found elsewhere, whether as an entry on the blockchain using any known scheme, or on [discogs.com](https://discogs.com) by exact match of `(Song Name, Artist Name)`, you will be warned and alerted of this. You could always try to lie and attest to song hashes of pre-2018 songs that you didn't create, but the platform resists this by 1) politely failing when attempting to double-commit and 2) by querying the Master Music DB first when assessing uniqueness.
 
-#### Initializing `_filebazaar.yaml`
+- Search implementations **must** return the **earliest** songhash commitment, with precedence order 1) `OP_RETURN songhash` 2) `OP_RETURN 6d02 songhash` ([memo protocol](https://memo.cash/protocol)) 3) Stampery & OpenTimestamps. Any later (second) appearances of the songhash are deemed invalid.
 
-You can use `$ filebazaar init [directory]` to initialize a new `_filebazaar.yaml` config file.
-A random `token_secret` will be added for you. If no `[directory]` is specified, the file will be created in the working directory.
+- The songhash serves as a unique permanent identifier, which is easy to calculate from song itself. One can verify whether they have 1) any original file 2) **the** original file, if they know its artist's domain or BTC address.
 
-#### Running FileBazaar
+- FLAC only (should convert from ALAC or MP3 if necessary), so never any need for more than one file to commit, per song.
 
-To start FileBazaar, run `$ filebazaar [path]`. You can either specify the path to the files directory or to the `_filebazaar.yaml` file.
-If no `[path]` is specified, defaults to the working directory.
+- File downloads are hosted directly on the artist's server instance (as the default for FileBazaar). This could be externalized if necessary, but should probably remain within the same domain.
 
-## File Preview
+- Even if the artist doesn't control the domain in the future, the creator's identity can still be verified via the BTC blockchain or timestamp proofs.
 
-FileBazaar can currently generate previews for the following file types:
+- Both the songhash (sha256 of file audio; could also provide a checksum of the 'tagged' version) and any Stampery/OTS proofs should be viewable by shoppers on the artist's domain.
 
-- Images: a preview image will be generated by pixelating the left half of the image and adding watermark text using [node-canvas](https://github.com/Automattic/node-canvas) and [graphicsmagick](http://www.graphicsmagick.org) (see [example image](https://i.imgur.com/OmrUysL.png)).
+- Search times over the entire blockchain (at upload/ownership-verification time) are a significant question here; the latest Bitcore code and caching makes this feasible.
 
-- Videos & audio: a preview will be generated by slicing off the first 30 seconds using [ffmpeg](http://ffmpeg.org).
+- With Stampery & OpenTimestamps, the artist's ownership of the original proofs are evidence of the earliest-ever-uploaded version of a song, to be disputed only against another attestion of existence of an earlier instance of the songhash, from the chain or a public attestation server. An artist gets strongest assurances by interacting with the blockchain directly; the proposed model depends on a mirrored network of attestation (OpenTimestamps) servers, but doesn't have to.
 
-- Documents: a preview image of the first page of the document will be generated using [unoconv](https://github.com/dagwieers/unoconv) (supports pdf, doc, docx, odt, and many others).
+- The **store domain** must also be trusted by the buyer, as always, not just the artist's ownership of their private key - otherwise the delivery step may be a lie!
 
-In addition, EXIF metadata will be extracted using [exiftool](https://www.sno.phy.queensu.ca/~phil/exiftool/) and displayed for all file types.
+- One artist (by name) per song, for now.
 
-## License
+**Notes from OpenTimestamps -**
+- You can create timestamps that don’t depend on calendars by using the `--wait` option. This will make the client wait until the timestamp is completely confirmed by the Bitcoin blockchain. The resulting timestamp will contain all the data needed to prove the timestamp with Bitcoin, allowing verification to be done completely locally.
+- OpenTimestamps scales indefinitely, allowing timestamps to be created for free by combining an unlimited number of timestamps into one Bitcoin transaction.
 
-MIT
+### Future Niceties -
+- Artist Admin UI (currently FileBazaar uses YAML + files)
+- Buy/Sell multiple songs at once
